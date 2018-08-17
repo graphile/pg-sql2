@@ -36,7 +36,6 @@ function makeRawNode(text: string): SQLRawNode {
   if (typeof text !== "string") {
     throw new Error("Invalid argument to makeRawNode - expected string");
   }
-  // $FlowFixMe: flow doesn't like symbols
   return { type: "RAW", text, [$$trusted]: true };
 }
 
