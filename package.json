@@ -6,7 +6,7 @@
   "scripts": {
     "flow": "flow",
     "jest": "jest",
-    "lint": "eslint .",
+    "lint": "tslint src/**/*.ts",
     "test": "node src/index.js && eslint . && flow check && jest && markdown-doctest",
     "test:u": "node src/index.js && eslint . && flow check && jest -u && markdown-doctest",
     "test:docs": "markdown-doctest",
@@ -49,6 +49,8 @@
     "markdown-doctest": "^0.9.1",
     "prettier": "1.11.0",
     "ts-node": "7.0.1",
+    "tslint": "5.11.0",
+    "tslint-config-prettier": "1.14.0",
     "typescript": "3.0.1"
   },
   "jest": {

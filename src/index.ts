@@ -1,5 +1,5 @@
-import { QueryConfig } from "pg";
 import * as debugFactory from "debug";
+import { QueryConfig } from "pg";
 
 const debug = debugFactory("pg-sql2");
 
@@ -9,21 +9,24 @@ function debugError(err: Error) {
 }
 
 const $$trusted = Symbol("trusted");
-type SQLRawNode = {
+
+interface SQLRawNode {
   text: string;
   type: "RAW";
   [$$trusted]: true;
-};
-type SQLIdentifierNode = {
-  names: Array<string | Symbol>;
+}
+
+interface SQLIdentifierNode {
+  names: Array<string | symbol>;
   type: "IDENTIFIER";
   [$$trusted]: true;
-};
-type SQLValueNode = {
+}
+
+interface SQLValueNode {
   value: any;
   type: "VALUE";
   [$$trusted]: true;
-};
+}
 
 export type SQLNode = SQLRawNode | SQLValueNode | SQLIdentifierNode;
 export type SQLQuery = Array<SQLNode>;
@@ -37,11 +40,11 @@ function makeRawNode(text: string): SQLRawNode {
   return { type: "RAW", text, [$$trusted]: true };
 }
 
-function isStringOrSymbol(val: any): val is string | Symbol {
+function isStringOrSymbol(val: any): val is string | symbol {
   return typeof val === "string" || typeof val === "symbol";
 }
 
-function makeIdentifierNode(names: Array<string | Symbol>): SQLIdentifierNode {
+function makeIdentifierNode(names: Array<string | symbol>): SQLIdentifierNode {
   if (!Array.isArray(names) || !names.every(isStringOrSymbol)) {
     throw new Error(
       "Invalid argument to makeIdentifierNode - expected array of strings/symbols"
@@ -50,8 +53,8 @@ function makeIdentifierNode(names: Array<string | Symbol>): SQLIdentifierNode {
   return { type: "IDENTIFIER", names, [$$trusted]: true };
 }
 
-function makeValueNode(value: any): SQLValueNode {
-  return { type: "VALUE", value, [$$trusted]: true };
+function makeValueNode(rawValue: any): SQLValueNode {
+  return { type: "VALUE", value: rawValue, [$$trusted]: true };
 }
 
 function ensureNonEmptyArray<T>(
@@ -102,8 +105,9 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
         sqlFragments.push(item.text);
         break;
       case "IDENTIFIER":
-        if (item.names.length === 0)
+        if (item.names.length === 0) {
           throw new Error("Identifier must have a name");
+        }
 
         sqlFragments.push(
           item.names
@@ -112,20 +116,20 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
                 const name: string = rawName;
                 return escapeSqlIdentifier(name);
               } else if (typeof rawName === "symbol") {
-                const name: Symbol = rawName;
+                const name: symbol = rawName;
 
                 // Get the correct identifier string for this symbol.
-                let identifier = symbolToIdentifier.get(name);
+                let identifierForSymbol = symbolToIdentifier.get(name);
 
                 // If there is no identifier, create one and set it.
-                if (!identifier) {
-                  identifier = `__local_${nextSymbolId++}__`;
-                  symbolToIdentifier.set(name, identifier);
+                if (!identifierForSymbol) {
+                  identifierForSymbol = `__local_${nextSymbolId++}__`;
+                  symbolToIdentifier.set(name, identifierForSymbol);
                 }
 
                 // Return the identifier. Since we create it, we won’t have to
                 // escape it because we know all of the characters are safe.
-                return identifier;
+                return identifierForSymbol;
               } else {
                 throw debugError(
                   new Error(
@@ -188,12 +192,12 @@ export function query(
       items.push(makeRawNode(text));
     }
     if (values[i]) {
-      const value = values[i];
-      if (Array.isArray(value)) {
-        const nodes: SQLQuery = value.map(enforceValidNode);
+      const val = values[i];
+      if (Array.isArray(val)) {
+        const nodes: SQLQuery = val.map(enforceValidNode);
         items.push(...nodes);
       } else {
-        const node: SQLNode = enforceValidNode(value);
+        const node: SQLNode = enforceValidNode(val);
         items.push(node);
       }
     }
@@ -215,7 +219,7 @@ export function raw(text: string): SQLNode {
  * a table, schema, or column name. An identifier may also have a namespace,
  * thus why many names are accepted.
  */
-export function identifier(...names: Array<string | Symbol>): SQLNode {
+export function identifier(...names: Array<string | symbol>): SQLNode {
   return makeIdentifierNode(ensureNonEmptyArray(names));
 }
 
@@ -285,10 +289,10 @@ export function join(items: Array<SQL>, rawSeparator: string = ""): SQLQuery {
 // Copied from https://github.com/brianc/node-postgres/blob/860cccd53105f7bc32fed8b1de69805f0ecd12eb/lib/client.js#L285-L302
 // Ported from PostgreSQL 9.2.4 source code in src/interfaces/libpq/fe-exec.c
 export function escapeSqlIdentifier(str: string) {
-  var escaped = '"';
+  let escaped = '"';
 
-  for (var i = 0, l = str.length; i < l; i++) {
-    var c = str[i];
+  for (let i = 0, l = str.length; i < l; i++) {
+    const c = str[i];
     if (c === '"') {
       escaped += c + c;
     } else {
