@@ -110,35 +110,37 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
           throw new Error("Identifier must have a name");
         }
 
-        sqlFragments[itemIndex] = item.names
-          .map(rawName => {
-            if (typeof rawName === "string") {
-              const name: string = rawName;
-              return escapeSqlIdentifier(name);
-            } else if (typeof rawName === "symbol") {
-              const name: symbol = rawName;
+        const nameCount = item.names.length;
+        const mappedNames = new Array(nameCount);
+        for (let nameIndex = 0; nameIndex < nameCount; nameIndex++) {
+          const rawName = item.names[nameIndex];
+          if (typeof rawName === "string") {
+            const name: string = rawName;
+            mappedNames[nameIndex] = escapeSqlIdentifier(name);
+          } else if (typeof rawName === "symbol") {
+            const name: symbol = rawName;
 
-              // Get the correct identifier string for this symbol.
-              let identifierForSymbol = symbolToIdentifier.get(name);
+            // Get the correct identifier string for this symbol.
+            let identifierForSymbol = symbolToIdentifier.get(name);
 
-              // If there is no identifier, create one and set it.
-              if (!identifierForSymbol) {
-                identifierForSymbol = `__local_${nextSymbolId++}__`;
-                symbolToIdentifier.set(name, identifierForSymbol);
-              }
-
-              // Return the identifier. Since we create it, we won’t have to
-              // escape it because we know all of the characters are safe.
-              return identifierForSymbol;
-            } else {
-              throw debugError(
-                new Error(
-                  `Expected string or symbol, received '${String(rawName)}'`
-                )
-              );
+            // If there is no identifier, create one and set it.
+            if (!identifierForSymbol) {
+              identifierForSymbol = `__local_${nextSymbolId++}__`;
+              symbolToIdentifier.set(name, identifierForSymbol);
             }
-          })
-          .join(".");
+
+            // Return the identifier. Since we create it, we won’t have to
+            // escape it because we know all of the characters are safe.
+            mappedNames[nameIndex] = identifierForSymbol;
+          } else {
+            throw debugError(
+              new Error(
+                `Expected string or symbol, received '${String(rawName)}'`
+              )
+            );
+          }
+        }
+        sqlFragments[itemIndex] = mappedNames.join(".");
         break;
       case "VALUE":
         values.push(item.value);
