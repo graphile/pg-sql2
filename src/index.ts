@@ -113,13 +113,10 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
         const nameCount = item.names.length;
         const mappedNames = new Array(nameCount);
         for (let nameIndex = 0; nameIndex < nameCount; nameIndex++) {
-          const rawName = item.names[nameIndex];
-          if (typeof rawName === "string") {
-            const name: string = rawName;
+          const name: string | symbol = item.names[nameIndex];
+          if (typeof name === "string") {
             mappedNames[nameIndex] = escapeSqlIdentifier(name);
-          } else if (typeof rawName === "symbol") {
-            const name: symbol = rawName;
-
+          } else if (typeof name === "symbol") {
             // Get the correct identifier string for this symbol.
             let identifierForSymbol = symbolToIdentifier.get(name);
 
@@ -134,9 +131,7 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
             mappedNames[nameIndex] = identifierForSymbol;
           } else {
             throw debugError(
-              new Error(
-                `Expected string or symbol, received '${String(rawName)}'`
-              )
+              new Error(`Expected string or symbol, received '${String(name)}'`)
             );
           }
         }
