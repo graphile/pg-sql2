@@ -95,22 +95,22 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
   let nextSymbolId = 0;
   const symbolToIdentifier = new Map();
 
-  for (let i = 0; i < itemCount; i++) {
-    const rawItem = items[i];
+  for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+    const rawItem = items[itemIndex];
     const item: SQLNode = enforceValidNode(rawItem);
     switch (item.type) {
       case "RAW":
         if (typeof item.text !== "string") {
           throw new Error("RAW node expected string");
         }
-        sqlFragments[i] = item.text;
+        sqlFragments[itemIndex] = item.text;
         break;
       case "IDENTIFIER":
         if (item.names.length === 0) {
           throw new Error("Identifier must have a name");
         }
 
-        sqlFragments[i] = item.names
+        sqlFragments[itemIndex] = item.names
           .map(rawName => {
             if (typeof rawName === "string") {
               const name: string = rawName;
@@ -142,7 +142,7 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
         break;
       case "VALUE":
         values.push(item.value);
-        sqlFragments[i] = `$${values.length}`;
+        sqlFragments[itemIndex] = `$${values.length}`;
         break;
       default:
       // This cannot happen
