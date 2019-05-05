@@ -291,7 +291,7 @@ export function escapeSqlIdentifier(str: string) {
   for (let i = 0, l = str.length; i < l; i++) {
     const c = str[i];
     if (c === '"') {
-      escaped += c + c;
+      escaped += '""';
     } else {
       escaped += c;
     }
