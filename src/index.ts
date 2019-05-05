@@ -285,21 +285,16 @@ export function join(items: Array<SQL>, rawSeparator: string = ""): SQLQuery {
 
 // Copied from https://github.com/brianc/node-postgres/blob/860cccd53105f7bc32fed8b1de69805f0ecd12eb/lib/client.js#L285-L302
 // Ported from PostgreSQL 9.2.4 source code in src/interfaces/libpq/fe-exec.c
+// Trivial performance optimisations by Benjie.
 export function escapeSqlIdentifier(str: string) {
-  let escaped = '"';
+  let escaped = "";
 
   for (let i = 0, l = str.length; i < l; i++) {
     const c = str[i];
-    if (c === '"') {
-      escaped += '""';
-    } else {
-      escaped += c;
-    }
+    escaped += c === '"' ? '""' : c;
   }
 
-  escaped += '"';
-
-  return escaped;
+  return '"' + escaped + '"';
 }
 
 export const blank = query``;
