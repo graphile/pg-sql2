@@ -49,12 +49,10 @@
     "testRegex": "__tests__/.*\\.test\\.js$"
   },
   "dependencies": {
-    "@types/pg": "^7.4.14",
-    "debug": "^4.1.1"
+    "@types/pg": ">=6 <8",
+    "debug": ">=3 <5"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "engines": {
     "node": ">=8.6"
   }
