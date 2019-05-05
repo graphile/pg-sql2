@@ -77,8 +77,12 @@ function ensureNonEmptyArray<T>(
 }
 
 export function compile(sql: SQLQuery | SQLNode): QueryConfig {
+  const items = Array.isArray(sql) ? sql : [sql];
+
+  const itemCount = items.length;
+
   // Join this to generate the SQL query
-  const sqlFragments = [];
+  const sqlFragments = new Array(itemCount);
 
   // Values hold the JavaScript values that are represented in the query
   // string by placeholders. They are eager because they were provided before
@@ -91,9 +95,7 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
   let nextSymbolId = 0;
   const symbolToIdentifier = new Map();
 
-  const items = Array.isArray(sql) ? sql : [sql];
-
-  for (let i = 0, l = items.length; i < l; i++) {
+  for (let i = 0; i < itemCount; i++) {
     const rawItem = items[i];
     const item: SQLNode = enforceValidNode(rawItem);
     switch (item.type) {
@@ -101,50 +103,49 @@ export function compile(sql: SQLQuery | SQLNode): QueryConfig {
         if (typeof item.text !== "string") {
           throw new Error("RAW node expected string");
         }
-        sqlFragments.push(item.text);
+        sqlFragments[i] = item.text;
         break;
       case "IDENTIFIER":
         if (item.names.length === 0) {
           throw new Error("Identifier must have a name");
         }
 
-        sqlFragments.push(
-          item.names
-            .map(rawName => {
-              if (typeof rawName === "string") {
-                const name: string = rawName;
-                return escapeSqlIdentifier(name);
-              } else if (typeof rawName === "symbol") {
-                const name: symbol = rawName;
+        sqlFragments[i] = item.names
+          .map(rawName => {
+            if (typeof rawName === "string") {
+              const name: string = rawName;
+              return escapeSqlIdentifier(name);
+            } else if (typeof rawName === "symbol") {
+              const name: symbol = rawName;
 
-                // Get the correct identifier string for this symbol.
-                let identifierForSymbol = symbolToIdentifier.get(name);
+              // Get the correct identifier string for this symbol.
+              let identifierForSymbol = symbolToIdentifier.get(name);
 
-                // If there is no identifier, create one and set it.
-                if (!identifierForSymbol) {
-                  identifierForSymbol = `__local_${nextSymbolId++}__`;
-                  symbolToIdentifier.set(name, identifierForSymbol);
-                }
-
-                // Return the identifier. Since we create it, we won’t have to
-                // escape it because we know all of the characters are safe.
-                return identifierForSymbol;
-              } else {
-                throw debugError(
-                  new Error(
-                    `Expected string or symbol, received '${String(rawName)}'`
-                  )
-                );
+              // If there is no identifier, create one and set it.
+              if (!identifierForSymbol) {
+                identifierForSymbol = `__local_${nextSymbolId++}__`;
+                symbolToIdentifier.set(name, identifierForSymbol);
               }
-            })
-            .join(".")
-        );
+
+              // Return the identifier. Since we create it, we won’t have to
+              // escape it because we know all of the characters are safe.
+              return identifierForSymbol;
+            } else {
+              throw debugError(
+                new Error(
+                  `Expected string or symbol, received '${String(rawName)}'`
+                )
+              );
+            }
+          })
+          .join(".");
         break;
       case "VALUE":
         values.push(item.value);
-        sqlFragments.push(`$${values.length}`);
+        sqlFragments[i] = `$${values.length}`;
         break;
       default:
+      // This cannot happen
     }
   }
 
