@@ -88,7 +88,9 @@ As `sql.value`, but in the case of very simple values may write them directly
 to the SQL statement rather than using a placeholder. Should only be used with
 data that is not sensitive and is trusted (not user-provided data), e.g. for
 the key arguments to `json_build_object(key, val, key, val, ...)` which you
-have produced.
+have produced. This also adds the necessary encapsulation for each of the types
+(ex. quotes are added around strings). If you want to directly inject the value
+instead, use `sql.raw`;
 
 ### `sql.join(arrayOfFragments, delimeter)`
 
@@ -126,6 +128,24 @@ const arrayOfSqlInnerJoins = [
 ];
 sql.query`select * from foo ${sql.join(arrayOfSqlInnerJoins, " ")}`;
 // select * from foo inner join bar on (bar.foo_id = foo.id) inner join baz on (baz.bar_id = bar.id)
+```
+
+### `sql.raw(val)`
+
+Directly injects the value provided into the SQL statement. **WARNING:** This value
+has no sanitation whatsover. Do NOT use this with user data, as they will
+have direct access to the query itself.
+
+```js
+const direction = "ascending";
+
+sql.query`
+  select * from foo order by bar ${sql.raw(
+    direction === "ascending" ? "asc" : "desc"
+  )}
+`;
+
+// select * from foo order by bar asc
 ```
 
 ### `sql.compile(query)`
