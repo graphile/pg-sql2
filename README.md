@@ -85,10 +85,10 @@ Represents an SQL value, will be replaced with a placeholder and the value colle
 ### `sql.literal(val)`
 
 As `sql.value`, but in the case of very simple values may write them directly
-to the SQL statement rather than using a placeholder. Should only be used with
+to the SQL statement (correctly escaped) rather than using a placeholder. Should only be used with
 data that is not sensitive and is trusted (not user-provided data), e.g. for
 the key arguments to `json_build_object(key, val, key, val, ...)` which you
-have produced.
+have produced. 
 
 ### `sql.join(arrayOfFragments, delimeter)`
 
@@ -127,6 +127,13 @@ const arrayOfSqlInnerJoins = [
 sql.query`select * from foo ${sql.join(arrayOfSqlInnerJoins, " ")}`;
 // select * from foo inner join bar on (bar.foo_id = foo.id) inner join baz on (baz.bar_id = bar.id)
 ```
+
+### DANGEROUS: `sql.raw(val)`
+
+**DO NOT USE THIS.** This is an escape hatch, and it should not be necessary, there
+is almost always a better way. Directly injects the value provided into the generated
+SQL statement as raw SQL with no escaping whatsoever. This opens your SQL statement
+up to SQL injection attacks if you use it with untrusted data. **DO NOT USE THIS.**
 
 ### `sql.compile(query)`
 
